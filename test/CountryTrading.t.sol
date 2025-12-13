@@ -204,6 +204,22 @@ contract CountryTradingTest is Test {
         // Initially should be 0 (no positions)
         assertEq(fundingRate, 0);
     }
+    function test_AdminSetters() public {
+        // Test setTradingFee
+        uint256 newFee = 20; // 0.2%
+        trading.setTradingFee(newFee);
+        assertEq(trading.tradingFeeBps(), newFee);
+
+        // Test setLiquidationThreshold
+        uint256 newThreshold = 9000; // 90%
+        trading.setLiquidationThreshold(newThreshold);
+        assertEq(trading.liquidationThresholdBps(), newThreshold);
+
+        // Test non-owner cannot set
+        vm.prank(user1);
+        vm.expectRevert();
+        trading.setTradingFee(30);
+    }
 }
 
 /**

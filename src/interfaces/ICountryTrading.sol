@@ -32,10 +32,20 @@ interface ICountryTrading {
     event PositionLiquidated(
         address indexed user, bytes32 indexed countryCode, uint256 positionId, uint256 liquidatedAmount
     );
+    event PositionPartiallyClosed(
+        address indexed user,
+        bytes32 indexed countryCode,
+        uint256 positionId,
+        uint256 closeRatioBps, // Basis points (5000 = 50%)
+        uint256 realizedPnl,
+        uint256 remainingCollateral,
+        uint256 remainingSize
+    );
     event CountryAdded(bytes32 indexed countryCode, address priceFeed);
     event CountryRemoved(bytes32 indexed countryCode);
     event ProtocolFeesCollected(uint256 amount, string source);
     event ProtocolFeesWithdrawn(address indexed owner, uint256 amount);
+    event CollateralIncreased(address indexed user, uint256 positionId, uint256 amount, uint256 newCollateralAmount);
 
     // Structs
     struct Position {
@@ -55,6 +65,8 @@ interface ICountryTrading {
     function openShortPosition(bytes32 countryCode, uint256 collateralAmount) external returns (uint256 positionId);
     function closePosition(uint256 positionId) external;
     function liquidatePosition(address user, uint256 positionId) external;
+    function increaseCollateral(uint256 positionId, uint256 amount) external;
+    function closePositionPartial(uint256 positionId, uint256 closeRatioBps) external;
     function getPosition(address user, uint256 positionId) external view returns (Position memory);
     function getUserPositions(address user) external view returns (uint256[] memory);
     function getCollateralBalance(address user) external view returns (uint256);

@@ -38,14 +38,16 @@ library FundingRateCalculator {
         }
 
         // Funding rate = imbalance * max_funding_rate
-        // Clamp to max funding rate
+        // Calculate potential rate first, THEN clamp
+        int256 potentialRate = (imbalance * int256(MAX_FUNDING_RATE_BPS)) / int256(BASIS_POINTS);
         int256 maxRate = int256(MAX_FUNDING_RATE_BPS);
-        if (imbalance > maxRate) {
+
+        if (potentialRate > maxRate) {
             fundingRate = maxRate;
-        } else if (imbalance < -maxRate) {
+        } else if (potentialRate < -maxRate) {
             fundingRate = -maxRate;
         } else {
-            fundingRate = (imbalance * int256(MAX_FUNDING_RATE_BPS)) / int256(BASIS_POINTS);
+            fundingRate = potentialRate;
         }
     }
 

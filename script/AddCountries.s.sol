@@ -27,31 +27,31 @@ contract AddCountriesScript is Script {
         // Format: registry.addCountry(keccak256("COUNTRY_CODE"), "Country Name", priceFeedAddress);
         // Price feed addresses should be loaded from .env file or set as variables
 
-        // Example: Load price feeds from .env
-        // address usPriceFeed = vm.envAddress("US_PRICE_FEED");
-        // address idPriceFeed = vm.envAddress("ID_PRICE_FEED");
-        // address sgPriceFeed = vm.envAddress("SG_PRICE_FEED");
+        // Load price feeds from .env
+        address usPriceFeed = vm.envAddress("US_PRICE_FEED");
+        address idPriceFeed = vm.envAddress("ID_PRICE_FEED");
+        address sgPriceFeed = vm.envAddress("SG_PRICE_FEED");
 
-        // Example: United States
-        // registry.addCountry(
-        //     keccak256("US"),
-        //     "United States",
-        //     usPriceFeed
-        // );
+        // United States
+        registry.addCountry(
+            keccak256("US"),
+            "United States",
+            usPriceFeed
+        );
 
-        // Example: Indonesia
-        // registry.addCountry(
-        //     keccak256("ID"),
-        //     "Indonesia",
-        //     idPriceFeed
-        // );
+        // Indonesia
+        registry.addCountry(
+            keccak256("ID"),
+            "Indonesia",
+            idPriceFeed
+        );
 
-        // Example: Singapore
-        // registry.addCountry(
-        //     keccak256("SG"),
-        //     "Singapore",
-        //     sgPriceFeed
-        // );
+        // Singapore
+        registry.addCountry(
+            keccak256("SG"),
+            "Singapore",
+            sgPriceFeed
+        );
 
         console.log("Countries added successfully!");
         console.log("CountryRegistry:", address(registry));

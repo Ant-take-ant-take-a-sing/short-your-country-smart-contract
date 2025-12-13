@@ -5,13 +5,14 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title LiquidityPool
  * @notice Manages liquidity pool for trading protocol
  * @dev Pool receives losses, pays profits, and collects fees
  */
-contract LiquidityPool is ReentrancyGuard, Ownable {
+contract LiquidityPool is ReentrancyGuard, Ownable, Pausable {
     using SafeERC20 for IERC20;
 
     // State variables
@@ -40,7 +41,7 @@ contract LiquidityPool is ReentrancyGuard, Ownable {
      * @notice Deposit liquidity to pool (only owner for now, can be extended for LP tokens)
      * @param amount Amount to deposit
      */
-    function deposit(uint256 amount) external nonReentrant {
+    function deposit(uint256 amount) external nonReentrant whenNotPaused {
         require(amount > 0, "LiquidityPool: Amount must be greater than 0");
 
         collateralToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -53,7 +54,7 @@ contract LiquidityPool is ReentrancyGuard, Ownable {
      * @notice Withdraw liquidity from pool (only owner for now)
      * @param amount Amount to withdraw
      */
-    function withdraw(uint256 amount) external onlyOwner nonReentrant {
+    function withdraw(uint256 amount) external onlyOwner nonReentrant whenNotPaused {
         require(amount > 0, "LiquidityPool: Amount must be greater than 0");
         require(poolBalance >= amount, "LiquidityPool: Insufficient pool balance");
 
@@ -158,6 +159,20 @@ contract LiquidityPool is ReentrancyGuard, Ownable {
      */
     function getPoolMetrics() external view returns (uint256 poolBalance_, uint256 longOI, uint256 shortOI) {
         return (poolBalance, totalLongOpenInterest, totalShortOpenInterest);
+    }
+
+    /**
+     * @notice Pause the pool (Emergency only)
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause the pool
+     */
+    function unpause() external onlyOwner {
+        _unpause();
     }
 }
 
