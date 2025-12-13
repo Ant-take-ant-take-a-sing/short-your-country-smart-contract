@@ -119,7 +119,16 @@ async function processCountry(wallet, countryCode, data, yieldChange, oilChange)
         const oilImpact = oilChange * (data.corrOil || 0);
 
         // Calculate Final Composite Change
-        const totalChange = etfData.changePct + fxImpact + yieldImpact + oilImpact;
+        // Apply Volatility Multiplier to amplify movements for Perpetual Trading
+        const multiplier = config.volatilityMultiplier || 1;
+
+        // Apply Simulated Jitter (Random Noise)
+        // Math.random() is 0 to 1. (Math.random() * 2 - 1) gives -1 to +1.
+        const jitterParam = config.jitter || 0;
+        const randomJitter = (Math.random() * 2 - 1) * jitterParam;
+
+        // Total = (Real Data * Multiplier) + Random Jitter
+        const totalChange = ((etfData.changePct + fxImpact + yieldImpact + oilImpact) * multiplier) + randomJitter;
 
         const finalScoreRaw = data.baseGDP * (1 + totalChange);
         const finalScoreBigInt = ethers.parseUnits(finalScoreRaw.toFixed(8), 8);

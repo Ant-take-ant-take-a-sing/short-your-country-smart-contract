@@ -1,8 +1,18 @@
 // Configuration for Country Performance Index (CPI) Bot
 
 module.exports = {
-    // Refresh Interval in milliseconds (e.g., 10 seconds)
-    interval: 60000,
+    // Refresh Interval in milliseconds (e.g., 5 seconds for Perpetual/Fast)
+    interval: 5000,
+
+    // Volatility Multiplier (Amplifier)
+    // 1 = Real Movement (Normal)
+    // 3 = 3x More Volatile (Good for Demo/Perpetual excitement)
+    volatilityMultiplier: 3,
+
+    // Simulated Jitter (Noise) for 24/7 Activity
+    // 0.001 = +/- 0.1% random movement every cycle
+    // Keeps the chart alive even when markets are closed
+    jitter: 0.002,
 
     // Global Macro Indicators (Applied to everyone based on correlation)
     globals: {
