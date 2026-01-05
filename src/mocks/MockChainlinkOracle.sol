@@ -17,10 +17,18 @@ contract MockChainlinkOracle is AggregatorV3Interface {
     uint256 private updatedAt;
     uint80 private currentRoundId;
 
+    event PriceUpdated(
+        uint80 indexed roundId,
+        int256 price,
+        uint256 updatedAt
+    );
+
     constructor(int256 _initialPrice) {
         price = _initialPrice;
         updatedAt = block.timestamp;
         currentRoundId = 1;
+        
+        emit PriceUpdated(currentRoundId, _initialPrice, block.timestamp);
     }
 
     /**
@@ -29,13 +37,16 @@ contract MockChainlinkOracle is AggregatorV3Interface {
      */
     function updatePrice(int256 _newPrice) external {
         require(_newPrice > 0, "MockChainlinkOracle: Price must be positive");
+        
         price = _newPrice;
         updatedAt = block.timestamp;
         currentRoundId++;
+
+        emit PriceUpdated(currentRoundId, _newPrice, block.timestamp);
     }
 
     function getRoundData(
-        uint80 /* _roundId */
+        uint80
     )
         external
         view
@@ -54,4 +65,3 @@ contract MockChainlinkOracle is AggregatorV3Interface {
         return (currentRoundId, price, block.timestamp, updatedAt, currentRoundId);
     }
 }
-
