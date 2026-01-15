@@ -12,6 +12,7 @@ docs/
 
 # Dotenv file
 .env
+oracle-bot/.env
 
 # Dependencies
 node_modules/
