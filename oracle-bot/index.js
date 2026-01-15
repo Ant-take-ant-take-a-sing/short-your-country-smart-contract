@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config();
 const { ethers } = require('ethers');
 const axios = require('axios');
 const config = require('./config');
@@ -137,8 +137,8 @@ async function processCountry(wallet, countryCode, data, yieldChange, oilChange)
 
         const oracleContract = new ethers.Contract(oracleAddress, ORACLE_ABI, wallet);
         const tx = await oracleContract.updatePrice(finalScoreBigInt);
-        await tx.wait();
-        console.log(`[${countryCode}] Updated! Block: ${tx.blockNumber}`);
+        const receipt = await tx.wait();
+        console.log(`[${countryCode}] Updated! Block: ${receipt.blockNumber}`);
 
     } catch (error) {
         console.error(`[${countryCode}] Error:`, error.message);

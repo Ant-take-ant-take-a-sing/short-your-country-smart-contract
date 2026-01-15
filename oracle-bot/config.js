@@ -2,7 +2,7 @@
 
 module.exports = {
     // Refresh Interval in milliseconds (e.g., 5 seconds for Perpetual/Fast)
-    interval: 5000,
+    interval: 15000,
 
     // Volatility Multiplier (Amplifier)
     // 1 = Real Movement (Normal)
