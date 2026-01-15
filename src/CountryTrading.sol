@@ -334,7 +334,8 @@ contract CountryTrading is ICountryTrading, ReentrancyGuard, Ownable, Pausable {
         (uint256 currentPrice,) = countryRegistry.getCountryPrice(position.countryCode);
 
         // Calculate P&L for the ENTIRE position first
-        int256 totalPnl = TradingMath.calculatePnL(position.isLong, position.positionSize, position.entryPrice, currentPrice);
+        int256 totalPnl =
+            TradingMath.calculatePnL(position.isLong, position.positionSize, position.entryPrice, currentPrice);
 
         // Calculate portions to close
         // If closeRatio is 5000 (50%), we take 50% of collateral and 50% of the P&L
@@ -343,7 +344,9 @@ contract CountryTrading is ICountryTrading, ReentrancyGuard, Ownable, Pausable {
         int256 pnlToRealize = (totalPnl * int256(closeRatioBps)) / 10000;
 
         // Ensure we don't leave dust
-        require(position.positionSize - sizeToClose >= MIN_POSITION_SIZE, "CountryTrading: Remaining position too small");
+        require(
+            position.positionSize - sizeToClose >= MIN_POSITION_SIZE, "CountryTrading: Remaining position too small"
+        );
 
         // Calculate trading fee only for the closed portion
         // Value of closed portion = Collateral + PnL (Unrealized)
@@ -352,7 +355,7 @@ contract CountryTrading is ICountryTrading, ReentrancyGuard, Ownable, Pausable {
 
         // --- P&L DISTRIBUTION (Similar to full close logic but proportional) ---
         uint256 amountToUser;
-        
+
         if (pnlToRealize >= 0) {
             // Profit scenario
             uint256 profit = uint256(pnlToRealize);
@@ -371,7 +374,7 @@ contract CountryTrading is ICountryTrading, ReentrancyGuard, Ownable, Pausable {
             totalCollateral += collateralToClose;
 
             // Handle Profit & Fee payment
-            
+
             // Fee logic
             uint256 feeFromCollateral = closingFee > collateralToClose ? collateralToClose : closingFee;
             uint256 feeFromProfit = closingFee - feeFromCollateral;
@@ -387,21 +390,20 @@ contract CountryTrading is ICountryTrading, ReentrancyGuard, Ownable, Pausable {
             if (profitToPay > 0) {
                 liquidityPool.payProfit(msg.sender, profitToPay);
             }
-
         } else {
             // Loss scenario
             uint256 loss = uint256(-pnlToRealize);
-            
+
             // Cap loss at collateral (cannot lose more than collateral)
             uint256 actualLoss = loss > collateralToClose ? collateralToClose : loss;
-            
+
             // Remove loss from collateral
             uint256 remainingCollateralAfterLoss = collateralToClose - actualLoss;
 
             // Send loss to pool
             if (actualLoss > 0) {
-                 collateralToken.safeTransfer(address(liquidityPool), actualLoss);
-                 liquidityPool.receiveLoss(actualLoss);
+                collateralToken.safeTransfer(address(liquidityPool), actualLoss);
+                liquidityPool.receiveLoss(actualLoss);
             }
 
             // Fee logic on the remaining value
@@ -409,17 +411,17 @@ contract CountryTrading is ICountryTrading, ReentrancyGuard, Ownable, Pausable {
                 closingFee = remainingCollateralAfterLoss;
                 amountToUser = 0;
                 // All remainder goes to fee
-                 collateralToken.safeTransfer(address(liquidityPool), remainingCollateralAfterLoss);
-                 liquidityPool.receiveTradingFee(remainingCollateralAfterLoss);
+                collateralToken.safeTransfer(address(liquidityPool), remainingCollateralAfterLoss);
+                liquidityPool.receiveTradingFee(remainingCollateralAfterLoss);
             } else {
-                 amountToUser = remainingCollateralAfterLoss - closingFee;
-                 // Send fee to pool
-                 collateralToken.safeTransfer(address(liquidityPool), closingFee);
-                 liquidityPool.receiveTradingFee(closingFee);
-                 
-                 // Return remainder to user balance
-                 collateralBalances[msg.sender] += amountToUser;
-                 totalCollateral += amountToUser;
+                amountToUser = remainingCollateralAfterLoss - closingFee;
+                // Send fee to pool
+                collateralToken.safeTransfer(address(liquidityPool), closingFee);
+                liquidityPool.receiveTradingFee(closingFee);
+
+                // Return remainder to user balance
+                collateralBalances[msg.sender] += amountToUser;
+                totalCollateral += amountToUser;
             }
         }
 
@@ -429,7 +431,7 @@ contract CountryTrading is ICountryTrading, ReentrancyGuard, Ownable, Pausable {
         // Reduce the position size and collateral by the CLOSED portion
         position.collateralAmount -= collateralToClose;
         position.positionSize -= sizeToClose;
-        
+
         // Note: entryPrice DOES NOT CHANGE. This is key for Partial Close.
 
         emit PositionPartiallyClosed(
@@ -441,7 +443,7 @@ contract CountryTrading is ICountryTrading, ReentrancyGuard, Ownable, Pausable {
             position.collateralAmount,
             position.positionSize
         );
-        
+
         emit ProtocolFeesCollected(closingFee, "close-partial");
     }
 
@@ -457,10 +459,10 @@ contract CountryTrading is ICountryTrading, ReentrancyGuard, Ownable, Pausable {
 
         // Transfer collateral from user
         collateralToken.safeTransferFrom(msg.sender, address(this), amount);
-        
+
         // Update position collateral
         position.collateralAmount += amount;
-        
+
         // Update user balances
         collateralBalances[msg.sender] += amount;
         totalCollateral += amount;
@@ -564,7 +566,6 @@ contract CountryTrading is ICountryTrading, ReentrancyGuard, Ownable, Pausable {
         // Note: liquidationAmount is positionValue, which may be less than collateralAmount
         // We transfer the actual liquidationAmount, not the full collateral
         if (liquidationAmount > 0) {
-            
             // Calculate protocol fee from the pool's share
             uint256 protocolFee = (poolAmount * 100) / 10000;
             if (protocolFee > 0) {
@@ -582,7 +583,7 @@ contract CountryTrading is ICountryTrading, ReentrancyGuard, Ownable, Pausable {
                 collateralToken.safeTransfer(address(liquidityPool), poolAmount);
                 liquidityPool.receiveLoss(poolAmount);
             }
-            
+
             emit ProtocolFeesCollected(protocolFee, "liquidation");
         }
 

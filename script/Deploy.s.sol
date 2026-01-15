@@ -60,4 +60,3 @@ contract DeployScript is Script {
         console.log("4. Start trading!");
     }
 }
-

@@ -20,6 +20,7 @@ contract MockAggregator {
     function decimals() external pure returns (uint8) {
         return 8;
     }
+
     function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80) {
         return (0, 100 * 1e8, 0, block.timestamp, 0); // Price 100 USD (8 decimals)
     }
@@ -46,31 +47,31 @@ contract AddMarginTest is Test {
         registry.addCountry(ID, "Test Country", address(oracle));
 
         usdt.transfer(user, 1000 * 1e18);
-        
+
         vm.prank(user);
         usdt.approve(address(trading), type(uint256).max);
     }
 
     function test_IncreaseCollateral() public {
-        vm.startPrank(user); 
+        vm.startPrank(user);
         trading.deposit(500 * 1e18); // Deposit sufficient collateral first
         uint256 posId = trading.openLongPosition(ID, 100 * 1e18);
-        
+
         uint256 initialCollateral = trading.getCollateralBalance(user);
-        
+
         // 2. Increase Collateral (+50)
         // Note: Initial approval was infinite, so no need to approve again unless simulation context changed
-        
+
         trading.increaseCollateral(posId, 50 * 1e18);
-        
+
         // 3. Verify Position
         ICountryTrading.Position memory pos = trading.getPosition(user, posId);
         assertEq(pos.collateralAmount, 150 * 1e18);
-        
+
         // 4. Verify Balance
         uint256 newCollateral = trading.getCollateralBalance(user);
         assertEq(newCollateral, initialCollateral + 50 * 1e18);
-        
+
         vm.stopPrank();
     }
 

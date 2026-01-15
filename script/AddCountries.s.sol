@@ -33,25 +33,13 @@ contract AddCountriesScript is Script {
         address sgPriceFeed = vm.envAddress("SG_PRICE_FEED");
 
         // United States
-        registry.addCountry(
-            keccak256("US"),
-            "United States",
-            usPriceFeed
-        );
+        registry.addCountry(keccak256("US"), "United States", usPriceFeed);
 
         // Indonesia
-        registry.addCountry(
-            keccak256("ID"),
-            "Indonesia",
-            idPriceFeed
-        );
+        registry.addCountry(keccak256("ID"), "Indonesia", idPriceFeed);
 
         // Singapore
-        registry.addCountry(
-            keccak256("SG"),
-            "Singapore",
-            sgPriceFeed
-        );
+        registry.addCountry(keccak256("SG"), "Singapore", sgPriceFeed);
 
         console.log("Countries added successfully!");
         console.log("CountryRegistry:", address(registry));

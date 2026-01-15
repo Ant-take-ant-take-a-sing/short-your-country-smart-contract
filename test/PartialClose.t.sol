@@ -55,7 +55,7 @@ contract PartialCloseTest is Test {
 
     function test_PartialClose_Profit() public {
         vm.startPrank(user);
-        
+
         // 1. Open Long Position: $100 Collateral -> $100 Size (1x Leverage)
         // Entry Price: $2,000
         uint256 collateral = 100 * 1e18;
@@ -81,13 +81,13 @@ contract PartialCloseTest is Test {
 
         console.log("Internal Collateral Received:", receivedCollateral);
         console.log("Wallet Profit Received:", receivedProfit);
-        
+
         // Fee is ~0.1% of $55 = $0.055.
         // Logic: Fee is deducted from Collateral first.
         // FeeFromCollateral = $0.055.
         // Returned Collateral = $50 - $0.055 = $49.945.
         // Profit Paid = $5 (Full).
-        
+
         // Check Collateral Return (~$49.945)
         assertGt(receivedCollateral, 49 * 1e18);
         assertLt(receivedCollateral, 50 * 1e18);
@@ -97,13 +97,13 @@ contract PartialCloseTest is Test {
 
         // Check Remaining Position
         ICountryTrading.Position memory pos = trading.getPosition(user, posId);
-        
+
         // Remaining Collateral should be $50
         assertEq(pos.collateralAmount, 50 * 1e18);
-        
+
         // Remaining Size should be $50
         assertEq(pos.positionSize, 50 * 1e18);
-        
+
         // Entry Price MUST remain $2,000
         assertEq(pos.entryPrice, 2000 * 1e18);
 
@@ -112,7 +112,7 @@ contract PartialCloseTest is Test {
 
     function test_PartialClose_Loss() public {
         vm.startPrank(user);
-        
+
         // 1. Open Long Position: $100 Collateral
         // Entry Price: $2,000
         uint256 collateral = 100 * 1e18;
@@ -144,10 +144,10 @@ contract PartialCloseTest is Test {
 
         // Check Remaining Position
         ICountryTrading.Position memory pos = trading.getPosition(user, posId);
-        
+
         // Remaining Collateral should be $50
         assertEq(pos.collateralAmount, 50 * 1e18);
-        
+
         // Remaining Size should be $50
         assertEq(pos.positionSize, 50 * 1e18);
 

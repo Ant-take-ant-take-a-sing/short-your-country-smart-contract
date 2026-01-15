@@ -204,6 +204,7 @@ contract CountryTradingTest is Test {
         // Initially should be 0 (no positions)
         assertEq(fundingRate, 0);
     }
+
     function test_AdminSetters() public {
         // Test setTradingFee
         uint256 newFee = 20; // 0.2%
