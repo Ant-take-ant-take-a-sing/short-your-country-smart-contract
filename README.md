@@ -1,219 +1,358 @@
-# Country Trading Smart Contract
+# GeoBit - Country Trading Protocol
 
-Smart contract untuk tokenisasi negara di mana negara-negara bisa di-long dan di-short dengan collateral token ERC20 (USDT, USDC, atau token lainnya). Sistem ini menggunakan **hybrid perpetual DEX model** dengan liquidity pool yang membayar profit trader dan menerima loss trader.
+Decentralized perpetual exchange for trading country economic indices with ERC20 collateral (USDT/USDC). The liquidity pool acts as counterparty to all trades.
 
-## 📋 Daftar Isi
+## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Fitur Utama](#fitur-utama)
-- [Arsitektur](#arsitektur)
-- [Parameter Trading](#parameter-trading)
-- [Liquidity Pool & Funding Rate](#liquidity-pool--funding-rate)
-- [Risk Management](#risk-management)
+- [Deployed Contracts](#deployed-contracts)
+- [Core Features](#core-features)
+- [Architecture](#architecture)
+- [Trading Parameters](#trading-parameters)
+- [Getting Started](#getting-started)
 
-## 🎯 Overview
+## 🚀 Deployed Contracts
 
-Sistem ini memungkinkan trading negara dengan mekanisme:
-- **Long Position**: Profit ketika harga negara naik
-- **Short Position**: Profit ketika harga negara turun
-- **Liquidity Pool**: Pool membayar profit trader dan menerima loss trader
-- **Funding Rate**: Menyeimbangkan long/short positions setiap 8 jam
-- **Liquidation**: Posisi yang undercollateralized akan di-liquidate
+### Mantle Sepolia Testnet
 
-### Alur Dana (Money Flow)
+| Contract | Address | Description |
+|----------|---------|-------------|
+| **CountryRegistry** | `0xE078C2e2b7127a2D2a4b6adb471bb7FD430ff505` | Manages country registration and price feeds |
+| **LiquidityPool** | `0x6Bc56dd4b203f8007bfa43eA24040c6AEc3e7F84` | Handles pool funds and open interest |
+| **CountryTrading** | `0xbad3D7656275D64665D501DAf3C20156671B5d2E` | Main trading contract |
+| **Collateral (USDT)** | `0xb70c008C221d71d49aa479a12e4DDb435a997425` | ERC20 collateral token |
 
-```
-Profit Trader → Pool membayar profit → Trader dapat profit
-Loss Trader → Loss masuk ke pool → Pool balance bertambah
-Trading Fees → Pool
-Funding Fees → Pool (dari sisi ramai ke sisi sedikit)
-Liquidation Surplus → Pool
-```
+### Price Feeds (Mock Chainlink Oracles)
 
-## ✨ Fitur Utama
+| Country | Address | Initial Price |
+|---------|---------|---------------|
+| **United States (US)** | `0x159Bd0f548E63053419DCf253DeCCeC86C57cFff` | $3,000.00 |
+| **Indonesia (ID)** | `0x4e871ee828a862709a0a87f626e579121a99e6F1` | $15,000.00 |
+| **Singapore (SG)** | `0x52D539544B520F08a2BE850749c1541e430F8DFC` | $1,350.00 |
 
-### Core Trading Features
-- ✅ **Deposit & Withdraw**: Deposit dan withdraw token ERC20 sebagai collateral
-- ✅ **Long Position**: Buka posisi long pada negara tertentu
-- ✅ **Short Position**: Buka posisi short pada negara tertentu
-- ✅ **Close Position**: Tutup posisi dan ambil profit/loss
-- ✅ **Multi-Position**: Setiap user bisa memiliki hingga 100 positions
+## ✨ Core Features
 
-### Risk Management
-- ✅ **Liquidation**: Mekanisme likuidasi otomatis untuk posisi yang undercollateralized
-- ✅ **Liquidation Threshold**: 85% dari collateral value
-- ✅ **Liquidator Bonus**: 5% dari remaining value
-- ✅ **Withdrawal Safety Check**: Mencegah withdrawal yang menyebabkan undercollateralization
+- **Long/Short Trading**: Perpetual positions on country indices with 1x leverage
+- **Partial Close**: Close 10-100% of positions
+- **Auto-Liquidation**: Positions liquidated at 85% threshold with 5% liquidator bonus
+- **Funding Rate**: Dynamic rate balancing long/short positions (max 1% per 8h)
+- **Chainlink Oracles**: Price feeds with staleness checks (1 hour max age)
+- **Multi-Position**: Up to 100 active positions per user
 
-### Fee System
-- ✅ **Trading Fee**: 0.1% (10 basis points) untuk open dan close position
-- ✅ **Funding Fee**: Dihitung berdasarkan long/short imbalance
-- ✅ **Protocol Fees**: Semua fees masuk ke liquidity pool
 
-### Oracle & Price Feed
-- ✅ **Chainlink Oracle**: Menggunakan Chainlink price feeds untuk harga real-time
-- ✅ **Price Staleness Check**: Maksimal 1 jam (3600 detik)
-- ✅ **Round Completeness Check**: Memastikan price feed round sudah complete
+## 🏗️ Architecture
 
-### Liquidity Pool
-- ✅ **Profit Payment**: Pool membayar profit trader
-- ✅ **Loss Reception**: Pool menerima loss trader
-- ✅ **Fee Collection**: Pool mengumpulkan trading fees dan funding fees
-- ✅ **Open Interest Tracking**: Track total long dan short open interest
-
-### Funding Rate
-- ✅ **Automatic Application**: Funding rate di-apply setiap 8 jam
-- ✅ **Imbalance Based**: Funding rate berdasarkan long/short imbalance
-- ✅ **Max Rate**: 1% per period (8 jam)
-- ✅ **Long Pays Short**: Jika long > short, long membayar funding fee
-- ✅ **Short Pays Long**: Jika short > long, short membayar funding fee
-
-## 🏗️ Arsitektur
-
-### Contract Structure
+### Contract Overview
 
 ```
-CountryTrading (Main Contract)
-├── CountryRegistry (Country & Price Feed Management)
-├── LiquidityPool (Pool Management)
-├── TradingMath (P&L & Fee Calculations)
-└── FundingRateCalculator (Funding Rate Logic)
+CountryTrading (Main Trading Engine)
+├── CountryRegistry (Price Feed & Country Management)
+├── LiquidityPool (Counterparty & Fund Management)
+├── TradingMath Library (P&L Calculations)
+└── FundingRateCalculator Library (Funding Rate Logic)
 ```
 
-### 1. CountryRegistry.sol
-**Fungsi**: Mengelola negara dan Chainlink price feed-nya
+### Interaction Flow
 
-**Fitur**:
-- Add/remove countries
-- Update price feed
-- Get country price (dengan staleness check)
-- Check country status
+```
+User → CountryTrading.openPosition()
+  ↓
+CountryTrading checks CountryRegistry.getPrice()
+  ↓
+CountryTrading transfers collateral from user
+  ↓
+CountryTrading updates LiquidityPool.updateOpenInterest()
+  ↓
+Position created and stored
 
-**Access Control**: Owner only untuk add/remove/update
+User → CountryTrading.closePosition()
+```
 
-### 2. LiquidityPool.sol
-**Fungsi**: Mengelola liquidity pool untuk trading protocol
+### CountryRegistry.sol
+Manages country registration and Chainlink price feeds.
 
-**Fitur**:
-- Deposit/withdraw liquidity (owner)
-- Pay profit to traders
-- Receive loss from traders
-- Receive trading fees
-- Receive funding fees
-- Track open interest (long/short)
+**Key Functions**:
+- `addCountry()` - Register new country with price feed
+- `getPrice()` - Get current price with validation (max 1h staleness)
+- `updatePriceFeed()` - Update oracle address
 
-**Access Control**: 
-- Owner: deposit/withdraw
-- Trading Contract: payProfit, receiveLoss, receiveFees, updateOpenInterest
+### LiquidityPool.sol
+Acts as counterparty, manages funds and open interest.
 
-### 3. CountryTrading.sol
-**Fungsi**: Main contract untuk trading operations
+**Key Functions**:
+- `depositLiquidity()` / `withdrawLiquidity()` - Owner fund management
+- `payProfit()` / `receiveLoss()` - Trade settlement
+- `updateOpenInterest()` - Track long/short positions
 
-**Fitur**:
-- Deposit/withdraw collateral
-- Open long/short positions
-- Close positions
-- Liquidate positions
-- Apply funding rate
-- Track protocol metrics
+### CountryTrading.sol
+Main trading engine for positions and liquidations.
 
-**Access Control**:
-- Public: deposit, withdraw, open/close positions
-- Anyone: liquidate (jika position bisa di-liquidate)
-- Owner: withdrawProtocolFees
+**Key Functions**:
+- `deposit()` / `withdraw()` - Manage collateral
+- `openPosition()` - Open long/short position
+- `closePosition()` - Close position (full or partial)
+- `addMargin()` - Increase collateral
+- `liquidatePosition()` - Liquidate undercollateralized positions
 
-### 4. TradingMath.sol
-**Library**: Perhitungan trading
+### Libraries
+- **TradingMath**: P&L and liquidation calculations
+- **FundingRateCalculator**: Funding rate logicases)**:
+- Trader losses (position closes at loss)
+- Trading fees (0.1% of position size)
+- Funding fees from crowded side
+- Liquidation surplus (after liquidator bonus)
+- Owner deposits
 
-**Fungsi**:
-- `calculatePnL()`: Hitung profit/loss
-- `calculateFee()`: Hitung trading fee
-- `calculatePositionValue()`: Hitung position value
-- `canLiquidate()`: Check apakah position bisa di-liquidate
-- `calculateLiquidationAmount()`: Hitung liquidation amount
+**Outflows (Pool Balance Decreases)**:
+- Trader profits (position closes at profit)
+- Funding fees to thin side
+- Owner withdrawals
 
-### 5. FundingRateCalculator.sol
-**Library**: Perhitungan funding rate
+**Balance Formula**:
+```
+Pool Balance = Initial Deposits + Cumulative Losses + Fees - Cumulative Profits
+```
 
-**Fungsi**:
-- `calculateFundingRate()`: Hitung funding rate berdasarkan imbalance
-- `calculateFundingFee()`: Hitung funding fee untuk position
-- `shouldApplyFunding()`: Check apakah funding harus di-apply (8 jam)
+### Open Interest Tracking
 
-## 📊 Parameter Trading
+```solidity
+totalLongOpenInterest  = sum of all long position sizes
+totalShortOpenInterest = sum of all short position sizes
+```
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| **Leverage** | 1x (fixed) | Position size = collateral amount |
-| **Trading Fee** | 0.1% (10 bps) | Applied on open and close |
-| **Liquidation Threshold** | 85% | Position liquidated if value < 85% of collateral |
-| **Max Positions per User** | 100 | Maximum active positions |
-| **Min Position Size** | 1 token (1e18) | Minimum collateral amount |
-| **Max Position Size** | 1,000,000 tokens | Maximum collateral amount |
-| **Liquidator Bonus** | 5% | Bonus dari remaining value |
-| **Funding Period** | 8 hours | Funding rate applied every 8 hours |
-| **Max Funding Rate** | 1% per period | Maximum funding rate per 8 hours |
-| **Price Staleness** | 1 hour | Maximum price age (3600 seconds) |
-
-## 💰 Liquidity Pool & Funding Rate
-
-### Liquidity Pool
-
-Pool bertanggung jawab untuk:
-- **Membayar profit** trader (dari pool balance)
-- **Menerima loss** trader (masuk ke pool balance)
-- **Mengumpulkan fees** (trading fees, funding fees)
-- **Track open interest** (long/short positions)
+**Used for**:
+- Funding rate calculation
+- Risk exposure monitoring
+- Pool health assessment
 
 ### Funding Rate Mechanism
 
-Funding rate menyeimbangkan long/short positions:
+**Purpose**: Balance long and short positions by creating a cost for the crowded side
 
-1. **Calculate Imbalance**: `(longOI - shortOI) / totalOI`
-2. **Calculate Rate**: `imbalance * maxFundingRate`
-3. **Apply Every 8 Hours**: Funding di-apply saat close position
-4. **Payment Flow**:
-   - Jika long > short: Long pays funding fee → Pool
-   - Jika short > long: Short pays funding fee → Pool
-   - Jika long < short: Long receives funding fee ← Pool
-   - Jika short < long: Short receives funding fee ← Pool
+**Calculation**:
+```solidity
+// 1. Calculate imbalance
+totalOI = longOI + shortOI
+imbalance = (longOI - shortOI) / totalOI  // -100% to +100%
 
-### Example Funding Rate
+// 2. Calculate funding rate
+fundingRate = imbalance * maxFundingRate  // Max ±1% per 8h
 
-```
-Long OI: 1000
-Short OI: 500
-Total OI: 1500
-Imbalance: (1000 - 500) / 1500 = 33.3%
-Funding Rate: 33.3% * 1% = 0.333% per period
-
-Long positions pay: positionSize * 0.333%
-Short positions receive: positionSize * 0.333%
+// 3. Cap at maximum
+if (fundingRate > maxRate) fundingRate = maxRate
+if (fundingRate < -maxRate) fundingRate = -maxRate
 ```
 
 ## ⚠️ Risk Management
 
-### Liquidation
+### Liquidation System
 
-Posisi akan di-liquidate jika:
-- Position value < 85% of collateral amount
-- Formula: `positionValue < (collateralAmount * 85%)`
+**Trigger Condition**:
+```solidity
+Position Value = Collateral + P&L
+Liquidation Threshold = Collateral * 85%
+
+if (Position Value < Liquidation Threshold) {
+    // Position can be liquidated
+}
+```
+
+**Example Scenarios**:
+
+```
+Long Position - Liquidatable
+Collateral: 100 tokens
+Entry: $3,000
+Current: $2,550 (15% drop)
+P&L: -15 tokens
+Position Value: 100 - 15 = 85 tokens
+Threshold: 100 * 85% = 85 tokens
+Status: 85 < 85 → Can liquidate
+
+Short Position - Safe
+Collateral: 100 tokens  
+Entry: $3,000
+Current: $3,300 (10% rise)
+P&L: -10 tokens
+Position Value: 100 - 10 = 90 tokens
+Threshold: 100 * 85% = 85 tokens
+Status: 90 > 85 → Safe
+```
 
 **Liquidation Process**:
-1. Apply funding rate (jika perlu)
-2. Calculate liquidation amount (remaining value)
-3. Liquidator gets 5% bonus
-4. Rest goes to pool (as loss)
-5. Protocol gets 1% fee (from pool amount)
+
+```solidity
+1. Anyone calls liquidatePosition(user, positionId)
+2. Verify position is liquidatable
+3. Apply any pending funding fees
+4. Calculate remaining value after P&L
+5. Liquidator bonus = remaining value * 5%
+6. Protocol fee = (remaining - bonus) * 5%
+7. Pool receives rest as loss
+8. Transfer bonus to liquidator
+9. Close position and update OI
+```
+
+**Liquidation Rewards**:
+```
+Remaining value: 85 tokens
+Liquidator bonus: 85 * 5% = 4.25 tokens
+Protocol fee: (85 - 4.25) * 5% = 4.04 tokens
+Pool receives: 85 - 4.25 - 4.04 = 76.71 tokens
+```
 
 ### Withdrawal Safety
 
-Withdrawal akan di-block jika:
-- Withdrawal menyebabkan position menjadi undercollateralized
-- Check dilakukan untuk semua active positions
+**Safety Check on Withdrawal**:
+```solidity
+function withdraw(uint256 amount) {
+    // Check all active positions remain safe
+    for each position {
+        newBalance = userBalance - amount
+        if (position would be liquidatable with newBalance) {
+            revert("Withdrawal would cause undercollateralization")
+        }
+    }
+    // Process withdrawal
+}
+```
 
-### Position Limits
+This prevents users from withdrawing collateral that would make their positions liquidatable.
 
-- **Min Position Size**: 1 token (prevents dust)
-- **Max Position Size**: 1,000,000 tokens (prevents excessive risk)
-- **Max Positions**: 100 per user (prevents gas issues)
+### Position Size Limits
+
+**Minimum Size** (1 token):
+- Prevents dust positions
+- Ensures meaningful liquidation rewards
+- Reduces gas waste on tiny positions
+
+**Maximum Size** (1,000,000 tokens):
+- Limits single-position risk
+- Protects pool from excessive exposure
+- Encourages position diversification
+
+**Maximum Positions** (100 per user):
+- Prevents gas limit issues on batch operations
+- Limits attack surface
+- Encourages position consolidation
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+```bash
+# Install Foundry
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+
+# Install Node.js dependencies (for oracle bot)
+npm install
+```
+
+### Local Development
+
+```bash
+# Clone repository
+git clone https://github.com/your-repo/geobit-contracts
+cd geobit-contracts
+
+# Install dependencies
+forge install
+
+# Run tests
+forge test
+
+# Run tests with gas report
+forge test --gas-report
+
+# Deploy to local network
+forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast
+```
+
+### Deployment
+
+```bash
+# Set environment variables
+cp .env.example .env
+# Edit .env with your values
+
+# Deploy to testnet
+forge script script/Deploy.s.sol \
+    --rpc-url $RPC_URL \
+    --private-key $PRIVATE_KEY \
+    --broadcast \
+    --verify
+
+# Deploy mock oracles
+forge script script/DeployMockOracle.s.sol \
+    --rpc-url $RPC_URL \
+    --private-key $PRIVATE_KEY \
+    --broadcast
+
+# Add countries
+forge script script/AddCountries.s.sol \
+    --rpc-url $RPC_URL \
+    --private-key $PRIVATE_KEY \
+    --broadcast
+```
+
+##Leverage | 1x | Fixed leverage |
+| Trading Fee | 0.1% | On open/close |
+| Liquidation Threshold | 85% | Auto-liquidation trigger |
+| Liquidator Bonus | 5% | Liquidation reward |
+| Funding Period | 8 hours | Rate application interval |
+| Max Funding Rate | 1% | Per 8h period |
+| Min Position | 1 token | Minimum size |
+| Max Position | 1M tokens | Maximum size |
+| Max Positions | 100 | Per user |
+
+### P&L Calculation
+
+```
+Long P&L  = (currentPrice - entryPrice) * positionSize / entryPrice
+Short P&L = (entryPrice - currentPrice) * positionSize / entryPrice
+```
+
+### Funding Rate
+
+```
+Imbalance = (longOI - shortOI) / totalOI
+Funding Rate = Imbalance * maxRate (±1%)
+Applied every 8 hours
+```
+
+### Liquidation
+
+Position liquidated when: `Collateral + P&L < Collateral * 85%`
+
+Liquidator receives 5% bonus, protocol takes 5% fee, rest goes to pool.Installation
+
+```bash
+# Install Foundry
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+
+# Install dependencies
+forge install
+npm install
+```
+
+### Testing & Deployment
+
+```bash
+# Run tests
+forge test
+
+# Deploy contracts
+forge script script/Deploy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
+
+# Start oracle bot
+pm2 start oracle-bot/index.js --name "geobit-oracle"
+```
+
+## 📄 License
+
+MIT License
+
+## ⚠️ Disclaimer
+
+Experimental software. Not audited. Use at your own risk
