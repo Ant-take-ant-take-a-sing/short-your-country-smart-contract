@@ -1,0 +1,21 @@
+{
+  "name": "short-your-country-smart-contract",
+  "version": "1.0.0",
+  "description": "Smart contract untuk tokenisasi negara di mana negara-negara bisa di-long dan di-short dengan collateral token ERC20 (USDT, USDC, atau token lainnya). Sistem ini menggunakan **hybrid perpetual DEX model** dengan liquidity pool yang membayar profit trader dan menerima loss trader.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.16.0"
+  }
+}
